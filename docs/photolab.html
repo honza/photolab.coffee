@@ -3,8 +3,10 @@
 <p>Photolab is a photo organization and sorting tool.</p>
 
 <p>Very often, I find myself importing a few hundred pictures from my camera
-into a directory like this:
-  <code>20110423</code></p>
+into a directory like this:</p>
+
+<pre><code>20110423
+</code></pre>
 
 <p>All the files in that directory have the default filenames given by the
 camera. Now I need to sort through all the files, ditch the ones that are
@@ -24,14 +26,24 @@ each image, you can click (+) or (x) to either keep it or discard it. When
 you're done, you can click the Process me button. Photolab will then take
 your selection and copy the high resolution files into a <code>done</code> directory.</p>
 
-<p><strong>IMPORTANT</strong>: Photolab will never alter your original files.</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Node.js imports</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">http = </span><span class="nx">require</span> <span class="s1">&#39;http&#39;</span>
+<p><strong>IMPORTANT</strong>: Photolab will never alter your original files.</p>
+
+<h3>Dependencies</h3>
+
+<ul>
+<li>Node.js</li>
+<li>npm</li>
+<li>npm install coffee-script</li>
+<li>npm install expres</li>
+<li>npm install jade</li>
+<li>npm install imagemagick</li>
+</ul>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Node.js imports</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">http = </span><span class="nx">require</span> <span class="s1">&#39;http&#39;</span>
 <span class="nv">url = </span><span class="nx">require</span> <span class="s1">&#39;url&#39;</span>
 <span class="nv">path = </span><span class="nx">require</span> <span class="s1">&#39;path&#39;</span>
 <span class="nv">express = </span><span class="nx">require</span> <span class="s1">&#39;express&#39;</span>
 <span class="nv">fs = </span><span class="nx">require</span> <span class="s1">&#39;fs&#39;</span>
 <span class="nv">exec = </span><span class="nx">require</span><span class="p">(</span><span class="s1">&#39;child_process&#39;</span><span class="p">).</span><span class="nx">exec</span>
-<span class="nv">im = </span><span class="nx">require</span> <span class="s1">&#39;imagemagick&#39;</span>
-<span class="nv">mustache = </span><span class="nx">require</span> <span class="s1">&#39;./lib/mustache&#39;</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Create an Express server</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">app = module.exports = </span><span class="nx">express</span><span class="p">.</span><span class="nx">createServer</span><span class="p">()</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>Configure express server
+<span class="nv">im = </span><span class="nx">require</span> <span class="s1">&#39;imagemagick&#39;</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Create an Express server</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">app = module.exports = </span><span class="nx">express</span><span class="p">.</span><span class="nx">createServer</span><span class="p">()</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>Configure express server
 We're using Jade templates.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">app</span><span class="p">.</span><span class="nx">configure</span> <span class="nf">() -&gt;</span>
   <span class="nx">app</span><span class="p">.</span><span class="nx">set</span> <span class="s1">&#39;views&#39;</span><span class="p">,</span> <span class="s2">&quot;#{__dirname}/views&quot;</span>
   <span class="nx">app</span><span class="p">.</span><span class="nx">set</span> <span class="s1">&#39;view engine&#39;</span><span class="p">,</span> <span class="s1">&#39;jade&#39;</span>

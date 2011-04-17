@@ -31,6 +31,7 @@
 #
 # * Node.js
 # * npm
+# * npm install coffee-script
 # * npm install expres
 # * npm install jade
 # * npm install imagemagick

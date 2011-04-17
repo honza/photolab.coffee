@@ -31,7 +31,13 @@ your selection and copy the high resolution files into a `done` directory.
 
 * Node.js
 * npm
+* npm install coffee-script
 * npm install expres
 * npm install jade
 * npm install imagemagick
+
+### Documentation
+
+The `docs` directory contains an annotated source of the `photolab.coffee`
+file.
 
