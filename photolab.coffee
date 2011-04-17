@@ -8,14 +8,32 @@ Photolab is a photo organization and sorting tool.
 http = require 'http'
 url = require 'url'
 path = require 'path'
+express = require 'express'
 fs = require 'fs'
 im = require 'imagemagick'
 mustache = require './lib/mustache'
+
+app = module.exports = express.createServer()
+
+app.configure () ->
+  app.set 'views', "#{__dirname}/views"
+  app.set 'view engine', 'jade'
+  app.use express.bodyParser()
+  app.use express.methodOverride()
+  app.use express.cookieParser()
+  app.use express.session secret: "+N3,6.By4(S"
+  app.use app.router
+  app.use express.static("#{__dirname}/public")
+  return
+
+app.configure 'development', () ->
+  app.use express.errorHandler(dumpExceptions: true, showStack: true)
 
 # Global variables
 CWD = process.cwd()
 ROOT = '/Users/norex/Pictures/20110408'
 TEMP = path.join ROOT, 'tmp'
+resizer = null
 
 # Template files
 INDEX = fs.readFileSync path.join(CWD, 'templates/index.html'), 'utf-8'
@@ -23,10 +41,17 @@ IMAGE = fs.readFileSync path.join(CWD, 'templates/image.html'), 'utf-8'
 PLUS = fs.readFileSync path.join(CWD, 'static/plus.png')
 CLOSE = fs.readFileSync path.join(CWD, 'static/close.png')
 
-resizer = null
-
 if not path.existsSync TEMP
     fs.mkdirSync TEMP, 0666
+
+# Remove everything but .jpg files
+removeJunk = (list) ->
+  result = []
+  for item in list
+    ext = item.substr((item.length - 4), 4)
+    if ext is '.jpg' or ext is '.JPG'
+      result.push item
+  return result
 
 ###
 Resizer class
@@ -95,156 +120,44 @@ processPictures = () ->
     resizer = new Resizer ps
     resizer.make()
 
-getIndex = (content, head) ->
-    result = mustache.Mustache.to_html INDEX,
-        content: content
-        head: head
-    result
+# Routes
+
+app.get '/', (req, res) ->
+  pictures = fs.readdirSync TEMP
+  pictures = removeJunk pictures
+  if pictures.length is 0
+    pictures = fs.readdirSync ROOT
+    pictures = removeJunk pictures
+    console.log pictures
+    res.render 'no-pictures',
+      pictures: pictures
+  else
+    res.render 'home',
+      pictures: pictures
+
+app.get '/progress', (req, res) ->
+  if resizer
+    res.send resizer.progress.toString()
+  else
+    res.send '0'
+
+app.get '/process', (req, res) ->
+  pictures = fs.readdirSync ROOT
+  pictures = removeJunk pictures
+  resizer = new Resizer pictures
+  resizer.make()
+  res.send(200)
+
+app.get '/image/*.jpg', (req, res) ->
+  image = req.params[0] + '.jpg'
+  p = path.join TEMP, image
+  res.contentType p
+  f = fs.readFileSync p
+  res.end f
 
 
-class Responder
-    constructor: (@req, @res) ->
 
-    respond: (content, type) ->
-        @res.writeHead 200,
-            'Content-Type': type
-        @res.end content
+if not module.parent
+  app.listen 8000
+  console.log "Server running..."
 
-    say: (content) ->
-        @respond content, 'text/html'
-
-    script: (content) ->
-        @respond content, 'text/javascript'
-
-    style: (content) ->
-        @respond content, 'text/css'
-
-    img: (content) ->
-        @respond content, 'image/jpeg'
-
-    png: (content) ->
-        @respond content, 'image/png'
-
-    text: (content) ->
-        @respond content, 'text/plain'
-
-
-class Router
-    constructor: (@responder) ->
-
-    home: () ->
-        pictures = fs.readdirSync TEMP
-
-        # If there are no pictures in the temporary directory, let's process
-        # the ones from the ROOT directory and put them there
-        if pictures.length is 0
-            big_pictures = fs.readdirSync ROOT
-            content = """
-            <div id="empty">
-            <p>The current directory</p>
-            <p><strong>#{ROOT}</strong></p>
-            <p>has the following pictures.</p>
-            """
-            for pic in big_pictures
-                if pic is 'tmp'
-                    continue
-                if pic is '.DS_Store'
-                    continue
-                content += "#{pic}<br>"
-            content += """
-            <p>Would you like me to process them?</p>
-            <p><a href="#" class="button" rel="process">Yes</a></p>
-            </div>
-            """
-            index = getIndex content, ''
-            @responder.say index
-            return
-            #processPictures()
-
-        html = ""
-
-        for picture in pictures
-            id = picture.substr(0, picture.length-4)
-            img = mustache.Mustache.to_html IMAGE,
-                id: id
-                picture: picture
-            html += img
-
-        head = "<script type='text/javascript'>var images = ["
-        for pic in pictures
-            head += "'#{pic}', "
-        head += "]</script>"
-
-        content = getIndex html, head
-        @responder.say content
-
-    script: () ->
-        that = @
-        fs.readFile 'static/script.js', 'binary', (e, file) ->
-            if not e
-                that.responder.script file
-            else
-                console.log 'error'
-
-    style: () ->
-        that = @
-        fs.readFile 'static/style.css', 'binary', (e, file) ->
-            if not e
-                that.responder.style file
-            else
-                console.log 'error'
-
-    img: (f) ->
-        f = f.substr 1
-        f = path.join TEMP, f
-        that = @
-        if not path.existsSync(f)
-            console.log 'got nothing'
-            return
-        fs.readFile f, (e, file) ->
-            if not e
-                that.responder.img file
-            else
-                console.log 'read error'
-
-    icon: (f) ->
-        if f is 'plus'
-            @responder.png PLUS
-        else
-            @responder.png CLOSE
-
-    progress: () ->
-        if resizer
-            @responder.text resizer.progress.toString()
-        else
-            @responder.text "0"
-
-    process: () ->
-        processPictures()
-        @responder.text 'ok'
-
-
-server = http.createServer (req, res) ->
-
-    u = url.parse req.url
-    u = u.pathname
-
-    r = new Responder req, res
-
-    router = new Router r
-
-    switch u
-        when '/' then router.home()
-        when '/progress' then router.progress()
-        when '/process' then router.process()
-        when '/favicon.ico' then console.log('fav')
-        when '/plus.png' then router.icon('plus')
-        when '/close.png' then router.icon('close')
-        else 
-            if path.extname(u) is '.jpg'
-                router.img u
-    
-
-# Start the server
-server.listen 8000, '127.0.0.1'
-console.log "Server is running..."

@@ -3,24 +3,56 @@
   Photolab.coffee
 
   Photolab is a photo organization and sorting tool.
-  */  var CLOSE, CWD, IMAGE, INDEX, PLUS, ROOT, Resizer, Responder, Router, TEMP, fs, getIndex, http, im, mustache, path, processPictures, resizer, server, url;
+  */  var CLOSE, CWD, IMAGE, INDEX, PLUS, ROOT, Resizer, TEMP, app, express, fs, http, im, mustache, path, processPictures, removeJunk, resizer, url;
   http = require('http');
   url = require('url');
   path = require('path');
+  express = require('express');
   fs = require('fs');
   im = require('imagemagick');
   mustache = require('./lib/mustache');
+  app = module.exports = express.createServer();
+  app.configure(function() {
+    app.set('views', "" + __dirname + "/views");
+    app.set('view engine', 'jade');
+    app.use(express.bodyParser());
+    app.use(express.methodOverride());
+    app.use(express.cookieParser());
+    app.use(express.session({
+      secret: "+N3,6.By4(S"
+    }));
+    app.use(app.router);
+    app.use(express.static("" + __dirname + "/public"));
+  });
+  app.configure('development', function() {
+    return app.use(express.errorHandler({
+      dumpExceptions: true,
+      showStack: true
+    }));
+  });
   CWD = process.cwd();
   ROOT = '/Users/norex/Pictures/20110408';
   TEMP = path.join(ROOT, 'tmp');
+  resizer = null;
   INDEX = fs.readFileSync(path.join(CWD, 'templates/index.html'), 'utf-8');
   IMAGE = fs.readFileSync(path.join(CWD, 'templates/image.html'), 'utf-8');
   PLUS = fs.readFileSync(path.join(CWD, 'static/plus.png'));
   CLOSE = fs.readFileSync(path.join(CWD, 'static/close.png'));
-  resizer = null;
   if (!path.existsSync(TEMP)) {
     fs.mkdirSync(TEMP, 0666);
   }
+  removeJunk = function(list) {
+    var ext, item, result, _i, _len;
+    result = [];
+    for (_i = 0, _len = list.length; _i < _len; _i++) {
+      item = list[_i];
+      ext = item.substr(item.length - 4, 4);
+      if (ext === '.jpg' || ext === '.JPG') {
+        result.push(item);
+      }
+    }
+    return result;
+  };
   /*
   Resizer class
 
@@ -54,14 +86,13 @@
         orig = path.join(ROOT, pic);
         dest = path.join(TEMP, pic);
         that = this;
-        im.resize({
+        return im.resize({
           srcPath: orig,
           dstPath: dest,
           width: 800
         }, function(err, stdout, stderr) {
           var now, one, p;
           console.log('res callback');
-          console.log(err);
           if (!err) {
             that.working = false;
             console.log(that.list);
@@ -81,7 +112,6 @@
             }
           }
         });
-        return this.make();
       }
     };
     return Resizer;
@@ -115,177 +145,48 @@
     resizer = new Resizer(ps);
     return resizer.make();
   };
-  getIndex = function(content, head) {
-    var result;
-    result = mustache.Mustache.to_html(INDEX, {
-      content: content,
-      head: head
-    });
-    return result;
-  };
-  Responder = (function() {
-    function Responder(req, res) {
-      this.req = req;
-      this.res = res;
-    }
-    Responder.prototype.respond = function(content, type) {
-      this.res.writeHead(200, {
-        'Content-Type': type
+  app.get('/', function(req, res) {
+    var pictures;
+    pictures = fs.readdirSync(TEMP);
+    pictures = removeJunk(pictures);
+    if (pictures.length === 0) {
+      pictures = fs.readdirSync(ROOT);
+      pictures = removeJunk(pictures);
+      console.log(pictures);
+      return res.render('no-pictures', {
+        pictures: pictures
       });
-      return this.res.end(content);
-    };
-    Responder.prototype.say = function(content) {
-      return this.respond(content, 'text/html');
-    };
-    Responder.prototype.script = function(content) {
-      return this.respond(content, 'text/javascript');
-    };
-    Responder.prototype.style = function(content) {
-      return this.respond(content, 'text/css');
-    };
-    Responder.prototype.img = function(content) {
-      return this.respond(content, 'image/jpeg');
-    };
-    Responder.prototype.png = function(content) {
-      return this.respond(content, 'image/png');
-    };
-    Responder.prototype.text = function(content) {
-      return this.respond(content, 'text/plain');
-    };
-    return Responder;
-  })();
-  Router = (function() {
-    function Router(responder) {
-      this.responder = responder;
-    }
-    Router.prototype.home = function() {
-      var big_pictures, content, head, html, id, img, index, pic, picture, pictures, _i, _j, _k, _len, _len2, _len3;
-      pictures = fs.readdirSync(TEMP);
-      if (pictures.length === 0) {
-        big_pictures = fs.readdirSync(ROOT);
-        content = "<div id=\"empty\">\n<p>The current directory</p>\n<p><strong>" + ROOT + "</strong></p>\n<p>has the following pictures.</p>";
-        for (_i = 0, _len = big_pictures.length; _i < _len; _i++) {
-          pic = big_pictures[_i];
-          if (pic === 'tmp') {
-            continue;
-          }
-          if (pic === '.DS_Store') {
-            continue;
-          }
-          content += "" + pic + "<br>";
-        }
-        content += "<p>Would you like me to process them?</p>\n<p><a href=\"#\" class=\"button\" rel=\"process\">Yes</a></p>\n</div>";
-        index = getIndex(content, '');
-        this.responder.say(index);
-        return;
-      }
-      html = "";
-      for (_j = 0, _len2 = pictures.length; _j < _len2; _j++) {
-        picture = pictures[_j];
-        id = picture.substr(0, picture.length - 4);
-        img = mustache.Mustache.to_html(IMAGE, {
-          id: id,
-          picture: picture
-        });
-        html += img;
-      }
-      head = "<script type='text/javascript'>var images = [";
-      for (_k = 0, _len3 = pictures.length; _k < _len3; _k++) {
-        pic = pictures[_k];
-        head += "'" + pic + "', ";
-      }
-      head += "]</script>";
-      content = getIndex(html, head);
-      return this.responder.say(content);
-    };
-    Router.prototype.script = function() {
-      var that;
-      that = this;
-      return fs.readFile('static/script.js', 'binary', function(e, file) {
-        if (!e) {
-          return that.responder.script(file);
-        } else {
-          return console.log('error');
-        }
+    } else {
+      return res.render('home', {
+        pictures: pictures
       });
-    };
-    Router.prototype.style = function() {
-      var that;
-      that = this;
-      return fs.readFile('static/style.css', 'binary', function(e, file) {
-        if (!e) {
-          return that.responder.style(file);
-        } else {
-          return console.log('error');
-        }
-      });
-    };
-    Router.prototype.img = function(f) {
-      var that;
-      f = f.substr(1);
-      f = path.join(TEMP, f);
-      that = this;
-      if (!path.existsSync(f)) {
-        console.log('got nothing');
-        return;
-      }
-      return fs.readFile(f, function(e, file) {
-        if (!e) {
-          return that.responder.img(file);
-        } else {
-          return console.log('read error');
-        }
-      });
-    };
-    Router.prototype.icon = function(f) {
-      if (f === 'plus') {
-        return this.responder.png(PLUS);
-      } else {
-        return this.responder.png(CLOSE);
-      }
-    };
-    Router.prototype.progress = function() {
-      if (resizer) {
-        return this.responder.text(resizer.progress.toString());
-      } else {
-        return this.responder.text("0");
-      }
-    };
-    Router.prototype.process = function() {
-      processPictures();
-      return this.responder.text('ok');
-    };
-    return Router;
-  })();
-  server = http.createServer(function(req, res) {
-    var r, router, u;
-    u = url.parse(req.url);
-    u = u.pathname;
-    r = new Responder(req, res);
-    router = new Router(r);
-    switch (u) {
-      case '/':
-        return router.home();
-      case '/progress':
-        return router.progress();
-      case '/process':
-        return router.process();
-      case '/script.js':
-        return router.script();
-      case '/style.css':
-        return router.style();
-      case '/favicon.ico':
-        return console.log('fav');
-      case '/plus.png':
-        return router.icon('plus');
-      case '/close.png':
-        return router.icon('close');
-      default:
-        if (path.extname(u) === '.jpg') {
-          return router.img(u);
-        }
     }
   });
-  server.listen(8000, '127.0.0.1');
-  console.log("Server is running...");
+  app.get('/progress', function(req, res) {
+    if (resizer) {
+      return res.send(resizer.progress.toString());
+    } else {
+      return res.send('0');
+    }
+  });
+  app.get('/process', function(req, res) {
+    var pictures;
+    pictures = fs.readdirSync(ROOT);
+    pictures = removeJunk(pictures);
+    resizer = new Resizer(pictures);
+    resizer.make();
+    return res.send(200);
+  });
+  app.get('/image/*.jpg', function(req, res) {
+    var f, image, p;
+    image = req.params[0] + '.jpg';
+    p = path.join(TEMP, image);
+    res.contentType(p);
+    f = fs.readFileSync(p);
+    return res.end(f);
+  });
+  if (!module.parent) {
+    app.listen(8000);
+    console.log("Server running...");
+  }
 }).call(this);
