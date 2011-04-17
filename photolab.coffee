@@ -10,6 +10,7 @@ url = require 'url'
 path = require 'path'
 express = require 'express'
 fs = require 'fs'
+exec = require('child_process').exec
 im = require 'imagemagick'
 mustache = require './lib/mustache'
 
@@ -20,8 +21,6 @@ app.configure () ->
   app.set 'view engine', 'jade'
   app.use express.bodyParser()
   app.use express.methodOverride()
-  app.use express.cookieParser()
-  app.use express.session secret: "+N3,6.By4(S"
   app.use app.router
   app.use express.static("#{__dirname}/public")
   return
@@ -36,7 +35,7 @@ TEMP = path.join ROOT, 'tmp'
 resizer = null
 
 if not path.existsSync TEMP
-    fs.mkdirSync TEMP, 0666
+  fs.mkdirSync TEMP, 16877
 
 # Remove everything but .jpg files
 removeJunk = (list) ->
@@ -46,6 +45,12 @@ removeJunk = (list) ->
     if ext is '.jpg' or ext is '.JPG'
       result.push item
   return result
+
+copyFile = (orig, dest) ->
+  o = fs.createReadStream orig
+  d = fs.createWriteStream dest
+  util.pump o, d, () ->
+    fs.unlinkSync orig
 
 ###
 Resizer class
@@ -64,7 +69,6 @@ class Resizer
     @progress = 0
     @initial = @list.length
     @done = false
-    console.log @list.length
 
   make: () ->
     if @done
@@ -76,7 +80,6 @@ class Resizer
     else
       @queue++
       pic = @list[0]
-      console.log "Processing #{pic}"
       orig = path.join ROOT, pic
       dest = path.join TEMP, pic
       that = @
@@ -85,10 +88,8 @@ class Resizer
         dstPath: dest
         width: 800,
         (err, stdout, stderr) ->
-            console.log 'res callback'
             if not err
               that.working = false
-              console.log that.list
               if that.list.length != 0
                 that.queue--
                 that.list.splice 0, 1
@@ -98,11 +99,9 @@ class Resizer
                 p = Math.round(p)
                 that.progress = p
 
-                console.log "#{pic} was resized"
                 that.make()
                 return
               else
-                console.log 'before done'
                 @done = true
                 return
 
@@ -110,7 +109,6 @@ processPictures = () ->
     pictures = fs.readdirSync ROOT
     ps = (p for p in pictures when p != 'tmp')
     ps = (p for p in ps when p != '.DS_Store')
-    console.log ps
     resizer = new Resizer ps
     resizer.make()
 
@@ -122,12 +120,13 @@ app.get '/', (req, res) ->
   if pictures.length is 0
     pictures = fs.readdirSync ROOT
     pictures = removeJunk pictures
-    console.log pictures
     res.render 'no-pictures',
       pictures: pictures
+      process: false
   else
     res.render 'home',
       pictures: pictures
+      process: true
 
 app.get '/progress', (req, res) ->
   if resizer
@@ -142,14 +141,21 @@ app.get '/process', (req, res) ->
   resizer.make()
   res.send(200)
 
+app.post '/create-final', (req, res) ->
+  pics = req.body.pictures
+  done = path.join ROOT, 'done/'
+  if not path.existsSync(done)
+    fs.mkdirSync done, 16877
+  for pic in pics
+    exec "cd #{ROOT} && cp #{pic} done/.", (e, out, err) ->
+  res.send(200)
+
 app.get '/image/*.jpg', (req, res) ->
   image = req.params[0] + '.jpg'
   p = path.join TEMP, image
   res.contentType p
   f = fs.readFileSync p
   res.end f
-
-
 
 if not module.parent
   app.listen 8000

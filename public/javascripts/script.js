@@ -41,6 +41,13 @@
       return false;
     });
 
+    $('#process-btn').click(function() {
+      $.post('/create-final', {pictures: pictures}, function() {
+        console.log('All done');
+      });
+      return false;
+    });
+
     $('#proceed').click(function() {
 
       $.get('/process', null, function(r) {

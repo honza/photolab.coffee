@@ -8,5 +8,8 @@ html
   body
   div#bar
     span#logo photolab.js
+    - if (process)
+        span#process
+            a(href='#', id='process-btn') Process me
   div#wrap
     != body

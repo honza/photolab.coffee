@@ -7,6 +7,7 @@ body {
 #bar {
     background: #333;
     padding: 5px 10px;
+    overflow: auto;
 }
 
 #logo {
@@ -70,4 +71,18 @@ body {
 #progress-bar {
     background-color: #666;
     height: 100%;
+}
+
+#process {
+    display: inline-block;
+    float: right;
+    background: #ececec;
+    padding: 5px 7px;
+    border-radius: 5px;
+}
+
+#process a {
+    font-size: 14px;
+    color: #000;
+    text-decoration: none;
 }

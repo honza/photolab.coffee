@@ -3,12 +3,13 @@
   Photolab.coffee
 
   Photolab is a photo organization and sorting tool.
-  */  var CWD, ROOT, Resizer, TEMP, app, express, fs, http, im, mustache, path, processPictures, removeJunk, resizer, url;
+  */  var CWD, ROOT, Resizer, TEMP, app, copyFile, exec, express, fs, http, im, mustache, path, processPictures, removeJunk, resizer, url;
   http = require('http');
   url = require('url');
   path = require('path');
   express = require('express');
   fs = require('fs');
+  exec = require('child_process').exec;
   im = require('imagemagick');
   mustache = require('./lib/mustache');
   app = module.exports = express.createServer();
@@ -17,10 +18,6 @@
     app.set('view engine', 'jade');
     app.use(express.bodyParser());
     app.use(express.methodOverride());
-    app.use(express.cookieParser());
-    app.use(express.session({
-      secret: "+N3,6.By4(S"
-    }));
     app.use(app.router);
     app.use(express.static("" + __dirname + "/public"));
   });
@@ -35,7 +32,7 @@
   TEMP = path.join(ROOT, 'tmp');
   resizer = null;
   if (!path.existsSync(TEMP)) {
-    fs.mkdirSync(TEMP, 0666);
+    fs.mkdirSync(TEMP, 16877);
   }
   removeJunk = function(list) {
     var ext, item, result, _i, _len;
@@ -48,6 +45,14 @@
       }
     }
     return result;
+  };
+  copyFile = function(orig, dest) {
+    var d, o;
+    o = fs.createReadStream(orig);
+    d = fs.createWriteStream(dest);
+    return util.pump(o, d, function() {
+      return fs.unlinkSync(orig);
+    });
   };
   /*
   Resizer class
@@ -66,7 +71,6 @@
       this.progress = 0;
       this.initial = this.list.length;
       this.done = false;
-      console.log(this.list.length);
     }
     Resizer.prototype.make = function() {
       var dest, orig, pic, that;
@@ -78,7 +82,6 @@
       } else {
         this.queue++;
         pic = this.list[0];
-        console.log("Processing " + pic);
         orig = path.join(ROOT, pic);
         dest = path.join(TEMP, pic);
         that = this;
@@ -88,10 +91,8 @@
           width: 800
         }, function(err, stdout, stderr) {
           var now, one, p;
-          console.log('res callback');
           if (!err) {
             that.working = false;
-            console.log(that.list);
             if (that.list.length !== 0) {
                             that.queue--;
               that.list.splice(0, 1);
@@ -100,11 +101,9 @@
               p = now / one;
               p = Math.round(p);
               that.progress = p;
-              console.log("" + pic + " was resized");
               that.make();;
             } else {
-                            console.log('before done');
-              this.done = true;;
+              this.done = true;
             }
           }
         });
@@ -137,7 +136,6 @@
       }
       return _results;
     })();
-    console.log(ps);
     resizer = new Resizer(ps);
     return resizer.make();
   };
@@ -148,13 +146,14 @@
     if (pictures.length === 0) {
       pictures = fs.readdirSync(ROOT);
       pictures = removeJunk(pictures);
-      console.log(pictures);
       return res.render('no-pictures', {
-        pictures: pictures
+        pictures: pictures,
+        process: false
       });
     } else {
       return res.render('home', {
-        pictures: pictures
+        pictures: pictures,
+        process: true
       });
     }
   });
@@ -171,6 +170,19 @@
     pictures = removeJunk(pictures);
     resizer = new Resizer(pictures);
     resizer.make();
+    return res.send(200);
+  });
+  app.post('/create-final', function(req, res) {
+    var done, pic, pics, _i, _len;
+    pics = req.body.pictures;
+    done = path.join(ROOT, 'done/');
+    if (!path.existsSync(done)) {
+      fs.mkdirSync(done, 16877);
+    }
+    for (_i = 0, _len = pics.length; _i < _len; _i++) {
+      pic = pics[_i];
+      exec("cd " + ROOT + " && cp " + pic + " done/.", function(e, out, err) {});
+    }
     return res.send(200);
   });
   app.get('/image/*.jpg', function(req, res) {
