@@ -27,6 +27,10 @@ body {
     text-align: center;
 }
 
+.keeper {
+    background: #edd400;
+}
+
 .image-controls {
     float: right;
 }

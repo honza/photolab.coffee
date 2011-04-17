@@ -2,8 +2,6 @@
 
   var _pics, populatePictures, removeItem;
   var pictures = [];
-  var keepers = [];
-  var rejects = [];
 
   populatePictures = function() {
     _pics = $('.image img');
@@ -27,9 +25,19 @@
     $('.discard').click(function () {
       var box = $(this).parent().parent();
       var id = box.find('.image img').attr('id');
-      box.fadeOut();
-      pictures = removeItem(pictures, id);
-      rejects.push(id);
+      if (box.hasClass('keeper')) {
+        box.removeClass('keeper');
+      } else {
+        box.fadeOut();
+        pictures = removeItem(pictures, id);
+      }
+      return false;
+    });
+
+    $('.keep').click(function () {
+      var box = $(this).parent().parent();
+      var id = box.find('.image img').attr('id');
+      box.addClass('keeper');
       return false;
     });
 
