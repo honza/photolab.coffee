@@ -5,7 +5,8 @@
 #
 # Very often, I find myself importing a few hundred pictures from my camera
 # into a directory like this:
-#   `20110423`
+#
+#     20110423
 #
 # All the files in that directory have the default filenames given by the
 # camera. Now I need to sort through all the files, ditch the ones that are
@@ -25,6 +26,14 @@
 # your selection and copy the high resolution files into a `done` directory.
 #
 # **IMPORTANT**: Photolab will never alter your original files.
+#
+# ### Dependencies
+#
+# * Node.js
+# * npm
+# * npm install expres
+# * npm install jade
+# * npm install imagemagick
 
 # Node.js imports
 http = require 'http'
@@ -34,7 +43,6 @@ express = require 'express'
 fs = require 'fs'
 exec = require('child_process').exec
 im = require 'imagemagick'
-mustache = require './lib/mustache'
 
 # Create an Express server
 app = module.exports = express.createServer()

@@ -1,5 +1,5 @@
 (function() {
-  var CWD, ROOT, Resizer, TEMP, app, exec, express, fs, http, im, mustache, path, processPictures, removeJunk, resizer, url;
+  var CWD, ROOT, Resizer, TEMP, app, exec, express, fs, http, im, path, processPictures, removeJunk, resizer, url;
   http = require('http');
   url = require('url');
   path = require('path');
@@ -7,7 +7,6 @@
   fs = require('fs');
   exec = require('child_process').exec;
   im = require('imagemagick');
-  mustache = require('./lib/mustache');
   app = module.exports = express.createServer();
   app.configure(function() {
     app.set('views', "" + __dirname + "/views");
