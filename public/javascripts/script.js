@@ -1,40 +1,65 @@
-$(function () {
-  var p;
+(function($) {
 
-  $('.discard').click(function () {
-    var id = $(this).attr('rel');
-    $('#' + id + "-image").fadeOut('normal', function() {
-      $(this).hide();
+  var _pics, populatePictures, removeItem;
+  var pictures = [];
+  var keepers = [];
+  var rejects = [];
+
+  populatePictures = function() {
+    _pics = $('.image img');
+    if (_pics.length > 0) {
+      _pics.each(function(i, item) {
+        pictures.push($(item).attr('id'));
+      });
+    }
+  };
+
+  removeItem = function(arr, item) {
+    return $.grep(arr, function(value) {
+      return value != item;
     });
-    images.pop(id);
-    return false;
+  };
+
+  $(function () {
+
+    populatePictures();
+
+    $('.discard').click(function () {
+      var box = $(this).parent().parent();
+      var id = box.find('.image img').attr('id');
+      box.fadeOut();
+      pictures = removeItem(pictures, id);
+      rejects.push(id);
+      return false;
+    });
+
+    $('#proceed').click(function() {
+
+      $.get('/process', null, function(r) {
+
+        $('#empty').fadeOut('fast', function() {
+          $('#empty').remove();
+          $('#wrap').append("<div id='progress-div'>" +
+          "<span id='progress'>0</span>%<br>" +
+          "<div id='progress-container'>" +
+          "<div id='progress-bar' style='width:0px'></div>" +
+          "</div></div>");
+          setInterval(function() {
+            $.get('/progress', null, function(r) {
+              console.log(r);
+              if (r === '100') {
+                window.location.reload();
+                return;
+              }
+              $('#progress').text(r);
+              $('#progress-bar').css('width', r);
+            });
+          }, 1000); // interval
+        }); // fadeOUt
+      }); // get
+      return false;
+    });
+
   });
 
-  $('#proceed').click(function() {
-
-    $.get('/process', null, function(r){
-
-      $('#empty').fadeOut('fast', function() {
-        $('#empty').remove();
-        $('#wrap').append("<div id='progress-div'>" +
-        "<span id='progress'>0</span>%<br>" +
-        "<div id='progress-container'>" +
-        "<div id='progress-bar' style='width:0px'></div>" +
-        "</div></div>");
-        p = setInterval(function() {
-          $.get('/progress', null, function(r) {
-            console.log(r);
-            if (r === '100') {
-              window.location.reload();
-              return;
-            }
-            $('#progress').text(r);
-            $('#progress-bar').css('width', r);
-          });
-        }, 1000); // interval
-      }); // fadeOUt
-    }); // get
-    return false;
-  });
-
-});
+})(jQuery);

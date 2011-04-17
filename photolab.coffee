@@ -35,12 +35,6 @@ ROOT = '/Users/norex/Pictures/20110408'
 TEMP = path.join ROOT, 'tmp'
 resizer = null
 
-# Template files
-INDEX = fs.readFileSync path.join(CWD, 'templates/index.html'), 'utf-8'
-IMAGE = fs.readFileSync path.join(CWD, 'templates/image.html'), 'utf-8'
-PLUS = fs.readFileSync path.join(CWD, 'static/plus.png')
-CLOSE = fs.readFileSync path.join(CWD, 'static/close.png')
-
 if not path.existsSync TEMP
     fs.mkdirSync TEMP, 0666
 

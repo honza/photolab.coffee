@@ -1,6 +1,8 @@
 div.image-box
     div.image-controls
-        a(href='#') Discard
-        a(href='#') Keep
+        a(href='#', class='discard')
+            img(src='/images/close.png')
+        a(href='#')
+            img(src='/images/plus.png')
     div.image
-        <img src="/image/#{image}" />
+        <img id="#{image}" src="/image/#{image}" />

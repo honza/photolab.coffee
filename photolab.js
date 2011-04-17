@@ -3,7 +3,7 @@
   Photolab.coffee
 
   Photolab is a photo organization and sorting tool.
-  */  var CLOSE, CWD, IMAGE, INDEX, PLUS, ROOT, Resizer, TEMP, app, express, fs, http, im, mustache, path, processPictures, removeJunk, resizer, url;
+  */  var CWD, ROOT, Resizer, TEMP, app, express, fs, http, im, mustache, path, processPictures, removeJunk, resizer, url;
   http = require('http');
   url = require('url');
   path = require('path');
@@ -34,10 +34,6 @@
   ROOT = '/Users/norex/Pictures/20110408';
   TEMP = path.join(ROOT, 'tmp');
   resizer = null;
-  INDEX = fs.readFileSync(path.join(CWD, 'templates/index.html'), 'utf-8');
-  IMAGE = fs.readFileSync(path.join(CWD, 'templates/image.html'), 'utf-8');
-  PLUS = fs.readFileSync(path.join(CWD, 'static/plus.png'));
-  CLOSE = fs.readFileSync(path.join(CWD, 'static/close.png'));
   if (!path.existsSync(TEMP)) {
     fs.mkdirSync(TEMP, 0666);
   }
