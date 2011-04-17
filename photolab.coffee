@@ -1,10 +1,32 @@
-###
-Photolab.coffee
+# Photolab.coffee
+# ===============
+#
+# Photolab is a photo organization and sorting tool.
+#
+# Very often, I find myself importing a few hundred pictures from my camera
+# into a directory like this:
+#   `20110423`
+#
+# All the files in that directory have the default filenames given by the
+# camera. Now I need to sort through all the files, ditch the ones that are
+# obviously bad, and copy them over to a new directory, rename them to
+# something more useful.
+#
+# What Photolab will do for you is the following. You run it like so:
+#
+#     $ coffee photolab.coffee /path/to/your/directory
+#
+# It will scan the directory for any `.jpg` files and show you a list. It will
+# ask you if you'd like to proceed. It will then make 800x533 thumbnails for
+# your in a `tmp` directory inside your main directory. When the thumbnails are
+# ready, you will be presented with a long HTML page with a list of images. For
+# each image, you can click (+) or (x) to either keep it or discard it. When
+# you're done, you can click the Process me button. Photolab will then take
+# your selection and copy the high resolution files into a `done` directory.
+#
+# **IMPORTANT**: Photolab will never alter your original files.
 
-Photolab is a photo organization and sorting tool.
-###
-
-# Imports
+# Node.js imports
 http = require 'http'
 url = require 'url'
 path = require 'path'
@@ -14,7 +36,11 @@ exec = require('child_process').exec
 im = require 'imagemagick'
 mustache = require './lib/mustache'
 
+# Create an Express server
 app = module.exports = express.createServer()
+
+# Configure express server
+# We're using Jade templates.
 
 app.configure () ->
   app.set 'views', "#{__dirname}/views"
@@ -29,15 +55,19 @@ app.configure 'development', () ->
   app.use express.errorHandler(dumpExceptions: true, showStack: true)
 
 # Global variables
+
 CWD = process.cwd()
-ROOT = '/Users/norex/Pictures/20110408'
+ROOT = process.argv[2]
 TEMP = path.join ROOT, 'tmp'
 resizer = null
+
+# Check if the `tmp` directory is present, if not, create it.
 
 if not path.existsSync TEMP
   fs.mkdirSync TEMP, 16877
 
-# Remove everything but .jpg files
+# Remove everything but .jpg files from `list` and return an array
+
 removeJunk = (list) ->
   result = []
   for item in list
@@ -46,20 +76,10 @@ removeJunk = (list) ->
       result.push item
   return result
 
-copyFile = (orig, dest) ->
-  o = fs.createReadStream orig
-  d = fs.createWriteStream dest
-  util.pump o, d, () ->
-    fs.unlinkSync orig
+# Resizer class
 
-###
-Resizer class
-
-This class handles synchronous resizing of images. If too many images are
-being resized at once, it tends to lock up the OS.
-
-TODO: Implement a throttled version - three images being process at once
-###
+# This class handles synchronous resizing of images. If too many images are
+# being resized at once, it tends to lock up the OS.
 
 class Resizer
   constructor: (@list) ->
@@ -112,7 +132,12 @@ processPictures = () ->
     resizer = new Resizer ps
     resizer.make()
 
-# Routes
+# ### Routes
+
+# Home route
+#
+# Either a page listing the files present in the root directory
+# or a list of images
 
 app.get '/', (req, res) ->
   pictures = fs.readdirSync TEMP
@@ -128,11 +153,18 @@ app.get '/', (req, res) ->
       pictures: pictures
       process: true
 
+# Progress
+#
+# This is used by ajax calls from the client to see how we're doing in terms of
+# resizing the images
+
 app.get '/progress', (req, res) ->
   if resizer
     res.send resizer.progress.toString()
   else
     res.send '0'
+
+# Process image files
 
 app.get '/process', (req, res) ->
   pictures = fs.readdirSync ROOT
@@ -140,6 +172,8 @@ app.get '/process', (req, res) ->
   resizer = new Resizer pictures
   resizer.make()
   res.send(200)
+
+# Copy files from root to done
 
 app.post '/create-final', (req, res) ->
   pics = req.body.pictures
@@ -150,12 +184,16 @@ app.post '/create-final', (req, res) ->
     exec "cd #{ROOT} && cp #{pic} done/.", (e, out, err) ->
   res.send(200)
 
+# Serve JPEG files from root
+
 app.get '/image/*.jpg', (req, res) ->
   image = req.params[0] + '.jpg'
   p = path.join TEMP, image
   res.contentType p
   f = fs.readFileSync p
   res.end f
+
+# Start the engines
 
 if not module.parent
   app.listen 8000

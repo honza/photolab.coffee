@@ -1,9 +1,5 @@
 (function() {
-  /*
-  Photolab.coffee
-
-  Photolab is a photo organization and sorting tool.
-  */  var CWD, ROOT, Resizer, TEMP, app, copyFile, exec, express, fs, http, im, mustache, path, processPictures, removeJunk, resizer, url;
+  var CWD, ROOT, Resizer, TEMP, app, exec, express, fs, http, im, mustache, path, processPictures, removeJunk, resizer, url;
   http = require('http');
   url = require('url');
   path = require('path');
@@ -28,7 +24,7 @@
     }));
   });
   CWD = process.cwd();
-  ROOT = '/Users/norex/Pictures/20110408';
+  ROOT = process.argv[2];
   TEMP = path.join(ROOT, 'tmp');
   resizer = null;
   if (!path.existsSync(TEMP)) {
@@ -46,22 +42,6 @@
     }
     return result;
   };
-  copyFile = function(orig, dest) {
-    var d, o;
-    o = fs.createReadStream(orig);
-    d = fs.createWriteStream(dest);
-    return util.pump(o, d, function() {
-      return fs.unlinkSync(orig);
-    });
-  };
-  /*
-  Resizer class
-
-  This class handles synchronous resizing of images. If too many images are
-  being resized at once, it tends to lock up the OS.
-
-  TODO: Implement a throttled version - three images being process at once
-  */
   Resizer = (function() {
     function Resizer(list) {
       this.list = list;
