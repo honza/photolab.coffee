@@ -41,3 +41,6 @@ your selection and copy the high resolution files into a `done` directory.
 The `docs` directory contains an annotated source of the `photolab.coffee`
 file.
 
+### License
+
+Photolab.js is licensed under the terms of the 3-clause BSD license.
