@@ -31,8 +31,8 @@ your selection and copy the high resolution files into a `done` directory.
 
 * Node.js
 * npm
-* npm install coffee-script
-* npm install expres
+* npm install -g coffee-script
+* npm install express
 * npm install jade
 * npm install imagemagick
 
