@@ -27,6 +27,12 @@ your selection and copy the high resolution files into a `done` directory.
 
 **IMPORTANT**: Photolab will never alter your original files.
 
+### Annotated source
+
+You can find the annotated source here:
+
+[http://honza.github.com/photolab.coffee/](http://honza.github.com/photolab.coffee/)
+
 ### Dependencies
 
 * Node.js
