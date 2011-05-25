@@ -33,8 +33,8 @@ your selection and copy the high resolution files into a <code>done</code> direc
 <ul>
 <li>Node.js</li>
 <li>npm</li>
-<li>npm install coffee-script</li>
-<li>npm install expres</li>
+<li>npm install -g coffee-script</li>
+<li>npm install express</li>
 <li>npm install jade</li>
 <li>npm install imagemagick</li>
 </ul>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Node.js imports</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">http = </span><span class="nx">require</span> <span class="s1">&#39;http&#39;</span>
@@ -52,6 +52,8 @@ We're using Jade templates.</p>             </td>             <td class="code"> 
   <span class="nx">app</span><span class="p">.</span><span class="nx">use</span> <span class="nx">app</span><span class="p">.</span><span class="nx">router</span>
   <span class="nx">app</span><span class="p">.</span><span class="nx">use</span> <span class="nx">express</span><span class="p">.</span><span class="nx">static</span><span class="p">(</span><span class="s2">&quot;#{__dirname}/public&quot;</span><span class="p">)</span>
   <span class="k">return</span>
+
+<span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">__dirname</span>
 
 <span class="nx">app</span><span class="p">.</span><span class="nx">configure</span> <span class="s1">&#39;development&#39;</span><span class="p">,</span> <span class="nf">() -&gt;</span>
   <span class="nx">app</span><span class="p">.</span><span class="nx">use</span> <span class="nx">express</span><span class="p">.</span><span class="nx">errorHandler</span><span class="p">(</span><span class="nv">dumpExceptions: </span><span class="kc">true</span><span class="p">,</span> <span class="nv">showStack: </span><span class="kc">true</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>Global variables</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nv">CWD = </span><span class="nx">process</span><span class="p">.</span><span class="nx">cwd</span><span class="p">()</span>

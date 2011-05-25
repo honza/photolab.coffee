@@ -31,8 +31,8 @@
 #
 # * Node.js
 # * npm
-# * npm install coffee-script
-# * npm install expres
+# * npm install -g coffee-script
+# * npm install express
 # * npm install jade
 # * npm install imagemagick
 
@@ -59,6 +59,8 @@ app.configure () ->
   app.use app.router
   app.use express.static("#{__dirname}/public")
   return
+
+console.log __dirname
 
 app.configure 'development', () ->
   app.use express.errorHandler(dumpExceptions: true, showStack: true)
