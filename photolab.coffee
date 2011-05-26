@@ -1,6 +1,3 @@
-# Photolab.coffee
-# ===============
-#
 # Photolab is a photo organization and sorting tool.
 #
 # Very often, I find myself importing a few hundred pictures from my camera
@@ -17,7 +14,7 @@
 #
 #     $ coffee photolab.coffee /path/to/your/directory
 #
-# It will scan the directory for any `.jpg` files and show you a list. It will
+# It will scan the directory for any image files and show you a list. It will
 # ask you if you'd like to proceed. It will then make 800x533 thumbnails for
 # your in a `tmp` directory inside your main directory. When the thumbnails are
 # ready, you will be presented with a long HTML page with a list of images. For
@@ -25,16 +22,25 @@
 # you're done, you can click the Process me button. Photolab will then take
 # your selection and copy the high resolution files into a `done` directory.
 #
+# Supported image formats:
+#
+# * JPEG
+# * RAW as supported by `dcraw`
+#
 # **IMPORTANT**: Photolab will never alter your original files.
 #
 # ### Dependencies
 #
-# * Node.js
+# * node.js
 # * npm
 # * npm install -g coffee-script
 # * npm install express
 # * npm install jade
 # * npm install imagemagick
+#
+# If you are going to use RAW images, you also need to install `dcraw`:
+#
+#   brew install dcraw
 
 # Node.js imports
 http = require 'http'
@@ -44,6 +50,12 @@ express = require 'express'
 fs = require 'fs'
 exec = require('child_process').exec
 im = require 'imagemagick'
+
+# List of file extensions we know we can process
+EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.CR2', '.CRW', '.NEF']
+
+# list of RAW camera file formats (as supported by `dcraw`)
+RAW = ['.CR2', '.CRW', '.NEF']
 
 # Create an Express server
 app = module.exports = express.createServer()
@@ -60,8 +72,6 @@ app.configure () ->
   app.use express.static("#{__dirname}/public")
   return
 
-console.log __dirname
-
 app.configure 'development', () ->
   app.use express.errorHandler(dumpExceptions: true, showStack: true)
 
@@ -77,13 +87,13 @@ resizer = null
 if not path.existsSync TEMP
   fs.mkdirSync TEMP, 16877
 
-# Remove everything but .jpg files from `list` and return an array
+# Remove files with extensions we don't recognize
 
 removeJunk = (list) ->
   result = []
   for item in list
     ext = item.substr((item.length - 4), 4)
-    if ext is '.jpg' or ext is '.JPG'
+    if ext in EXTENSIONS
       result.push item
   return result
 
@@ -111,30 +121,45 @@ class Resizer
     else
       @queue++
       pic = @list[0]
+      if not pic
+        @done = true
+        return
       orig = path.join ROOT, pic
       dest = path.join TEMP, pic
+      ext = pic.substr((pic.length - 4), 4)
       that = @
-      im.resize
-        srcPath: orig
-        dstPath: dest
-        width: 800,
-        (err, stdout, stderr) ->
-            if not err
-              that.working = false
-              if that.list.length != 0
-                that.queue--
-                that.list.splice 0, 1
-                now = that.initial - that.list.length
-                one = that.initial/100
-                p = now/one
-                p = Math.round(p)
-                that.progress = p
+      # Give RAW files special treatment
+      if ext in RAW
+        dest = "#{dest}.jpg"
+        exec("dcraw -c #{orig} | convert - -resize 800 #{dest}",
+          (err, stderr, stdout)->
+            that.callback err, stderr, stdout, that 
+        )
+      else
+        im.resize
+          srcPath: orig
+          dstPath: dest
+          width: 800,
+          (err, stderr, stdout) ->
+            that.callback err, stderr, stdout, that 
 
-                that.make()
-                return
-              else
-                @done = true
-                return
+  callback: (err, stdout, stderr, that) ->
+    if not err
+      that.working = false
+      if that.list.length != 0
+        that.queue--
+        that.list.splice 0, 1
+        now = that.initial - that.list.length
+        one = that.initial/100
+        p = now/one
+        p = Math.round(p)
+        that.progress = p
+
+        that.make()
+        return
+      else
+        @done = true
+        return
 
 processPictures = () ->
     pictures = fs.readdirSync ROOT
